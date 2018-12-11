@@ -1,6 +1,6 @@
 sfdc:
-  username: "automationtester@fanniemae.com.dedev1"
-  password: "Fannie_15"
-  securityToken: "o3LNMBfldWv1JWDbftcIUsE5I"
+  username: ""
+  password: ""
+  securityToken: ""
 http:
   port: "9002"
