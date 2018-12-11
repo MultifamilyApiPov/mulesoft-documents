@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+	<vm:config name="VM_Config" doc:name="VM Config" doc:id="e19a8739-5cae-456d-b14e-f43d3d66889d" >
+		<vm:queues >
+			<vm:queue queueName="dealDocQueue" maxOutstandingMessages="2" />
+		</vm:queues>
+	</vm:config>
+	<flow name="dealDocsAsyncFlow1" doc:id="8a2c80c0-33a3-44e6-8d9b-43bd2bbf2569" >
+		<vm:listener queueName="dealDocQueue" doc:name="Listener" doc:id="11cf5970-f8b5-45e4-b6e6-d223a17555c1" config-ref="VM_Config"/>
+		<flow-ref doc:name="post:\dealDocs:application\json:dealdocs-config" doc:id="67ee4212-70e9-4459-850a-32c36a0d9162" name="post:\dealDocs:application\json:dealdocs-config"/>
+	</flow>
+	<flow name="dealDocsAsyncFlow" doc:id="85bb1156-1a05-44c1-9382-fcc7540da711" >
+		<http:listener doc:name="/dealdoc/async" doc:id="244c9b73-7975-4fdc-84c1-5bc3d560fd3b" config-ref="dealdocs-httpListenerConfig" path="/dealdoc/async">
+			<http:response statusCode="201" />
+			<http:error-response >
+				<http:body ><![CDATA[#[output application/json --- {error: error.description}]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<vm:publish doc:name="Publish" doc:id="91fabe1d-ebf0-4f4c-ae45-0210b851c9bc" config-ref="VM_Config" queueName="dealDocQueue"/>
+		<ee:transform doc:name="Transform Message" doc:id="7f0194d4-3d67-4efd-b402-8d79dc02e544" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"dealId":payload.dealId,
+	"documentNames": payload.dealdocs.documentName
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
