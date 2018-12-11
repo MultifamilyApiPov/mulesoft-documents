@@ -1,0 +1,79 @@
+#%RAML 1.0
+title: Deal Document API
+description: DealDoc endpoint
+version: 1.0.0
+protocols:
+  - HTTPS
+  - HTTP
+baseUri: 'https://mocksvc.mulesoft.com/mocks/8d07533e-50cd-4894-b594-404a9f597df3'
+annotationTypes:
+  oas-format:
+    type: string
+    allowedTargets: TypeDeclaration
+  oas-body-name:
+    type: string
+    allowedTargets: TypeDeclaration
+  oas-summary:
+    type: string
+    allowedTargets: Method
+types:
+  deal:
+    type: object
+    properties:
+      dealId:
+        example: 12345
+        type: number
+        (oas-format): int
+      dealdocs:
+        type: DealDocs
+        required: false
+  DealDocs:
+    type: array
+    items:
+      type: DealDoc
+  DealDoc:
+    type: object
+    properties:
+      reference:
+        description: A unique label used to identify this particular Deal Document.
+        type: string
+        required: false
+      documentName:
+        type: string
+      documentCategory:
+        type: string
+        enum:
+          - Transaction Review
+          - Property
+      documentType:
+        type: string
+        enum:
+          - Lender Narrative
+          - Property Photos
+      documentFile:
+        type: string
+        (oas-format): binary
+/dealDocs:
+  post:
+    description: Creates new deal documents
+    displayName: addDealDocs
+    responses:
+      '201':
+        description: Created
+        body:
+          application/json:
+            type: object
+            properties:
+              dealId:
+                type: integer
+              documentName:
+                type: array
+                items:
+                  type: string
+                required: false
+    body:
+      application/json:
+        description: Deal Document Request
+        type: deal
+        (oas-body-name): body
+    (oas-summary): Add new Deal Documents

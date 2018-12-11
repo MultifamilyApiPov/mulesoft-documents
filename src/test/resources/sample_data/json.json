@@ -1,0 +1,12 @@
+{
+  "dealId": 65731,
+  "dealdocs": [
+    {
+      "reference": "ref1",
+      "documentName": "testOmkar",
+      "documentCategory": "Property",
+      "documentType": "Property Photos",
+      "documentFile": "Mule"
+    }
+  ]
+}
