@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
-http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
-http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
-http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:compression="http://www.mulesoft.org/schema/mule/compression" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/compression http://www.mulesoft.org/schema/mule/compression/current/mule-compression.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
     <http:listener-config name="dealdocs-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     <apikit:config name="dealdocs-config" raml="dealdocs.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="921e8d65-0b58-420f-93f8-ba47fc209d7d" >
-		<salesforce:basic-connection username="${sfdc.username}" password="${sfdc.password}" url="https://test.salesforce.com/services/Soap/u/43.0" securityToken="${sfdc.securityToken}"/>
-	</salesforce:sfdc-config>
-	<configuration-properties doc:name="Configuration properties" doc:id="127a5fc6-b4b9-4a7f-a0a5-818f316c3453" file="local-config.yaml" />
+    <salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="921e8d65-0b58-420f-93f8-ba47fc209d7d">
+        <salesforce:basic-connection username="${sfdc.username}" password="${sfdc.password}" url="https://test.salesforce.com/services/Soap/u/43.0" securityToken="${sfdc.securityToken}" disableSessionInvalidation="true">
+			<reconnection >
+				<reconnect frequency="5000" count="3" />
+			</reconnection>
+		</salesforce:basic-connection>
+    </salesforce:sfdc-config>
+    <configuration-properties doc:name="Configuration properties" doc:id="127a5fc6-b4b9-4a7f-a0a5-818f316c3453" file="local-config.yaml" />
 	<flow name="dealdocs-main">
         <http:listener config-ref="dealdocs-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -26,7 +27,7 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
         <apikit:router config-ref="dealdocs-config" />
         <error-handler>
             <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -39,7 +40,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -52,7 +53,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -65,7 +66,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -78,7 +79,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -91,7 +92,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -118,7 +119,7 @@ output application/json
         <apikit:console config-ref="dealdocs-config" />
         <error-handler>
             <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -132,30 +133,25 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
-	<sub-flow name="queryDealId" doc:id="e46f6ff2-607a-45d1-83fe-4fdb9cf1ce3e" >
-		<set-payload value="#[vars.originalPayload]" doc:name="Set originalPayload" doc:id="149e9d3f-e26f-4714-aa52-838b70430769" />
-		<salesforce:query doc:name="Query Opportunity" doc:id="33a4302e-8029-444e-b7c6-411280289c14" config-ref="Salesforce_Config">
-			<salesforce:salesforce-query >SELECT Id FROM Opportunity WHERE Deal_Id__c = ':id'</salesforce:salesforce-query>
-			<salesforce:parameters ><![CDATA[#[output application/java
+    <sub-flow name="queryDealId" doc:id="e46f6ff2-607a-45d1-83fe-4fdb9cf1ce3e">
+        <salesforce:query doc:name="Query Opportunity" doc:id="33a4302e-8029-444e-b7c6-411280289c14" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query>SELECT Id FROM Opportunity WHERE Deal_Id__c = ':id'</salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
 ---
 {
 	"id" : payload.dealId
 }]]]></salesforce:parameters>
-		</salesforce:query>
-		<set-variable doc:name="Set Variable dealId" doc:id="6c0a90bc-6314-4220-b1f9-86f5572627fa" variableName="dealId" value="#[payload[0].Id]"/>
-	</sub-flow>
-	<flow name="post:\dealDocs:application\json:dealdocs-config">
+        </salesforce:query>
+        <set-variable doc:name="Set Variable dealId" doc:id="6c0a90bc-6314-4220-b1f9-86f5572627fa" variableName="dealId" value="#[payload[0].Id]" />
+    </sub-flow>
+    <flow name="post:\dealDocs:application\json:dealdocs-config">
         <set-variable value="#[payload]" doc:name="Set Variable" doc:id="83c3fa5b-4585-493f-8fca-67c2178df4dd" variableName="originalPayload" mimeType="application/json" />
-		<set-payload value="#[vars.originalPayload]" doc:name="Set Payload" doc:id="bea565df-0694-4692-b355-0d6e59b44458" />
-		<flow-ref doc:name="queryDealId" doc:id="5bb00c37-bcbc-437c-addd-02b066ba1354" name="queryDealId"/>
-		<set-variable value="#[%dw 2.0
-import * from dw::core::Binaries
-output application/octet-stream
----
-toBase64(vars.originalPayload.dealdocs[0].documentFile as Binary)]" doc:name="Set Variable" doc:id="4d08fe96-c547-4541-9e1a-391f09c36030" variableName="fileBinary" mimeType="application/octet-stream"/>
-		<ee:transform doc:name="Map ContentVersion" doc:id="49757c34-e8b2-4a5f-84a9-0df1f281bf81" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+        <set-payload value="#[vars.originalPayload]" doc:name="Set Payload" doc:id="bea565df-0694-4692-b355-0d6e59b44458" />
+        <flow-ref doc:name="queryDealId" doc:id="5bb00c37-bcbc-437c-addd-02b066ba1354" name="queryDealId" />
+        <set-variable value="#[%dw 2.0 import * from dw::core::Binaries output application/octet-stream --- toBase64(vars.originalPayload.dealdocs[0].documentFile as Binary)]" doc:name="Set Variable" doc:id="4d08fe96-c547-4541-9e1a-391f09c36030" variableName="fileBinary" mimeType="application/octet-stream" />
+        <ee:transform doc:name="Map ContentVersion" doc:id="49757c34-e8b2-4a5f-84a9-0df1f281bf81">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 import * from dw::core::Binaries
 output application/java
 ---
@@ -165,25 +161,24 @@ output application/java
 	VersionData: (fromBase64(vars.originalPayload.dealdocs[0].documentFile)) as Binary {class:"byte[]"},
 	ContentLocation: "S"
 }]]]></ee:set-payload>
-			</ee:message>
-			<ee:variables >
-			</ee:variables>
-		</ee:transform>
-		<salesforce:create doc:id="d8378ca8-ad50-4d36-a087-2159d8039dfd" config-ref="Salesforce_Config" type="ContentVersion" doc:name="Create ContentVersion">
-			<reconnect />
-		</salesforce:create>
-		<salesforce:query doc:name="Query ContentVersion" doc:id="dadca63f-73d3-4aee-b286-a518d137a32a" config-ref="Salesforce_Config">
-			<salesforce:salesforce-query >SELECT Id, ContentDocumentId FROM ContentVersion WHERE Id = ':id'</salesforce:salesforce-query>
-			<salesforce:parameters ><![CDATA[#[output application/java
+            </ee:message>
+            <ee:variables />
+        </ee:transform>
+        <salesforce:create doc:id="d8378ca8-ad50-4d36-a087-2159d8039dfd" config-ref="Salesforce_Config" type="ContentVersion" doc:name="Create ContentVersion">
+            <reconnect />
+        </salesforce:create>
+        <salesforce:query doc:name="Query ContentVersion" doc:id="dadca63f-73d3-4aee-b286-a518d137a32a" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query>SELECT Id, ContentDocumentId FROM ContentVersion WHERE Id = ':id'</salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
 ---
 {
 	"id" : payload[0].id
 }]]]></salesforce:parameters>
-		</salesforce:query>
-		<set-variable value="#[payload]" doc:name="Set contentDocIds" doc:id="5798de4d-fe4d-4233-807f-1de48f973e4e" variableName="contentDocIds"/>
-		<ee:transform doc:name="map dealDocs" doc:id="2b8cee3a-e396-4195-bda2-8dfa614f044c" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+        </salesforce:query>
+        <set-variable value="#[payload]" doc:name="Set contentDocIds" doc:id="5798de4d-fe4d-4233-807f-1de48f973e4e" variableName="contentDocIds" />
+        <ee:transform doc:name="map dealDocs" doc:id="2b8cee3a-e396-4195-bda2-8dfa614f044c">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/java
 ---
 [{
@@ -194,13 +189,13 @@ output application/java
 	ContentVersionId__c: payload[0].Id,
 	ContentDocumentId__c: payload[0].ContentDocumentId
 }]]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<salesforce:create type="Deal_Document__c" doc:name="Create Deal Documents" doc:id="51f162c5-3812-4596-9eec-d83a2b4a5c27" config-ref="Salesforce_Config"/>
-		<set-variable value="#[payload]" doc:name="Set Variable dealDocIds" doc:id="a12aaeab-d136-4eb4-87da-05f11e33cfed" variableName="dealDocIds"/>
-		<ee:transform doc:name="Transform Message" doc:id="3b0fd995-4472-40fc-bffd-0b3690603aa0" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+            </ee:message>
+        </ee:transform>
+        <salesforce:create type="Deal_Document__c" doc:name="Create Deal Documents" doc:id="51f162c5-3812-4596-9eec-d83a2b4a5c27" config-ref="Salesforce_Config" />
+        <set-variable value="#[payload]" doc:name="Set Variable dealDocIds" doc:id="a12aaeab-d136-4eb4-87da-05f11e33cfed" variableName="dealDocIds" />
+        <ee:transform doc:name="Transform Message" doc:id="3b0fd995-4472-40fc-bffd-0b3690603aa0">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/java
 ---
 [{
@@ -208,20 +203,71 @@ output application/java
 		LinkedEntityId: vars.dealDocIds[0].id,
 		ShareType: 'V'
 }]]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<salesforce:create type="ContentDocumentLink" doc:name="Create Link" doc:id="8414a960-574a-4a9f-96bf-9799b0462c56" config-ref="Salesforce_Config"/>
-		<ee:transform doc:name="Transform Message" doc:id="dccb9fc4-4105-4c1c-9104-9e63dc0c662b" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+            </ee:message>
+        </ee:transform>
+        <salesforce:create type="ContentDocumentLink" doc:name="Create Link" doc:id="8414a960-574a-4a9f-96bf-9799b0462c56" config-ref="Salesforce_Config" />
+        <ee:transform doc:name="Transform Message" doc:id="dccb9fc4-4105-4c1c-9104-9e63dc0c662b">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
 	dealId: vars.originalPayload.dealId,
 	documentName: vars.originalPayload.dealdocs.documentName
 }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" message="post:\dealDocs:application\json:dealdocs-config" />
+    </flow>
+    <flow name="get:\dealDocs\(dealId):dealdocs-config">
+        <ee:transform doc:id="b17b6368-aa67-4294-a288-b32cb49f3c34">
+            <ee:variables>
+                <ee:set-variable variableName="dealId"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	dealId: attributes.uriParams.dealId
+}
+]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<salesforce:query doc:name="Query ContentDocumentId" doc:id="d3bcdff1-ea96-4713-bbb7-fd1ad0c8f33c" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query >SELECT Id, ContentVersionId__c FROM Deal_Document__c where deal__r.Deal_ID__c = ':id'</salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"id" : attributes.uriParams.dealId
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="9c3d5d09-4527-41df-a278-39fbc0c94282" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload.ContentVersionId__c map (
+	"'" ++ $ ++ "'"
+) joinBy ","]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" message="post:\dealDocs:application\json:dealdocs-config" />
+		<salesforce:query doc:name="Query VersionData" doc:id="baf57ec4-9019-42c5-8d7f-e598c9faedc5" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query >SELECT Id, VersionData, PathOnClient FROM ContentVersion WHERE Id IN (:ids)</salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"ids" : payload
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<compression:archive doc:name="Archive" doc:id="7112c5ae-eace-411b-b2d0-42ace7cd5270" outputEncoding="UTF-8">
+			<compression:entries ><![CDATA[#[%dw 2.0
+import * from dw::core::Binaries
+output application/java
+---
+(payload map({
+	($.PathOnClient default "" ++ ""):(fromBase64(($.VersionData default "")))
+})) reduce ($$ ++ $)]]]></compression:entries>
+			<compression:archiver >
+				<compression:zip-archiver />
+			</compression:archiver>
+		</compression:archive>
     </flow>
 </mule>
