@@ -5,7 +5,7 @@ version: 1.0.0
 protocols:
   - HTTPS
   - HTTP
-baseUri: 'https://mocksvc.mulesoft.com/mocks/8d07533e-50cd-4894-b594-404a9f597df3'
+baseUri: https://mocksvc.mulesoft.com/mocks/e2eb697a-f22f-4324-8b07-ecba2b221ab9 # baseUri: 'https://mocksvc.mulesoft.com/mocks/8d07533e-50cd-4894-b594-404a9f597df3'
 annotationTypes:
   oas-format:
     type: string
@@ -77,3 +77,17 @@ types:
         type: deal
         (oas-body-name): body
     (oas-summary): Add new Deal Documents
+  /{dealId}:
+    get:
+      responses: 
+        200:
+          description: This method will return all version datas associated to the deal Id in a zip file.
+          headers: 
+            Content-Type:
+              displayName: Content-Type
+              description: zip file
+              type: string
+              example: application/zip
+          body: 
+            application/zip:
+             type: file
